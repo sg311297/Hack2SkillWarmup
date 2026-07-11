@@ -15,71 +15,53 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. CACHED INITIALIZATION LAYER (EFFICIENCY & SECURITY)
+# 2. SECURE GATEKEEPER & INFRASTRUCTURE LAYER
 # -------------------------------------------------------------
-# @st.cache_resource(show_spinner=False)
-# def initialize_production_client():
-#     """
-#     Initializes the GenAI Client using standard secrets parameters.
-#     Bypasses custom header manipulation to ensure complete SDK compliance.
-#     """
-#     # Cascade lookup order: Streamlit Cloud Secrets -> Local OS Environment -> Fallback String
-#     if "GEMINI_API_KEY" in st.secrets:
-#         api_key_string = st.secrets["GEMINI_API_KEY"].strip()
-#     elif os.environ.get("GEMINI_API_KEY"):
-#         api_key_string = os.environ.get("GEMINI_API_KEY", "").strip()
-#     else:
-#         # Fallback project credential configuration variable
-#         api_key_string = "AQ.Ab8RN6KWInKaRgS0RdRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
+# Extract key securely from Streamlit Cloud Secrets or OS Environment
+env_key = ""
+if "GEMINI_API_KEY" in st.secrets:
+    env_key = st.secrets["GEMINI_API_KEY"].strip()
+elif os.environ.get("GEMINI_API_KEY"):
+    env_key = os.environ.get("GEMINI_API_KEY", "").strip()
 
-#     if not api_key_string:
-#         st.error("❌ Critical Infrastructure Failure: GEMINI_API_KEY is not configured.")
-#         st.info("💡 **Fix:** Add GEMINI_API_KEY inside the Streamlit Cloud Settings → Secrets tab.")
-#         st.stop()
-
-#     # Correct native instantiation using the simple string variable directly
-#     return genai.Client(api_key=api_key_string)
-
-# try:
-#     client = initialize_production_client()
-# except Exception as init_err:
-#     st.error(f"System Infrastructure initialization failure: {init_err}")
-#     st.stop()
-
-# -------------------------------------------------------------
-# 2. CACHED VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER
-# -------------------------------------------------------------
-@st.cache_resource(show_spinner=False)
-def initialize_vertex_client() -> genai.Client:
-    """
-    Initializes the GenAI client via Vertex AI. 
-    Routes the GCP service-account-bound key through the enterprise gateway.
-    """
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        # Paste your newly generated bound key string here securely
-        api_key = "AQ.Ab8RN6KWInKaRgS0RDRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
-        
-    # Crucial: Setting vertexai=True maps the AQ key format onto its native Google Cloud API layer
-    return genai.Client(
-        api_key=api_key,
-        vertexai=True
+# Fallback to an interactive secure widget if Secrets are not configured
+if not env_key:
+    st.sidebar.markdown("### 🔑 Authentication Setup")
+    user_api_key = st.sidebar.text_input(
+        label="Enter Gemini API Key to activate:",
+        type="password",
+        help="Paste your Google Cloud or AI Studio API key here."
     )
+else:
+    user_api_key = env_key
+
+# Stop execution gracefully if no key is provided anywhere
+if not user_api_key:
+    st.warning("⚠️ Waiting for Gemini API Key...")
+    st.info("💡 **Developer Check:** Please add your API key in the Streamlit Cloud Settings -> Secrets, or paste it in the sidebar.")
+    st.stop()
+
+@st.cache_resource(show_spinner=False)
+def initialize_client(validated_key: str) -> genai.Client:
+    """
+    Initializes the client on the public Generative Language endpoint.
+    Crucial: vertexai=False allows standard API keys to authenticate.
+    """
+    return genai.Client(api_key=validated_key.strip(), vertexai=False)
 
 try:
-    client = initialize_vertex_client()
+    client = initialize_client(user_api_key)
 except Exception as init_err:
-    st.error(f"System Infrastructure failure: {init_err}")
+    st.error(f"System Infrastructure failure during client setup: {init_err}")
     st.stop()
 
 # -------------------------------------------------------------
-# 3. ACCESSIBLE UI COMPONENT CONSTRUCTION (ACCESSIBILITY)
+# 3. ACCESSIBLE UI COMPONENT CONSTRUCTION
 # -------------------------------------------------------------
 st.title("🌧️ Monsoon Preparedness & Citizen Assistance Hub")
 st.caption("GenAI-Powered Crisis Resilience & Emergency Operations Dashboard")
 st.markdown("---")
 
-# User Input Form with accessible assistive support guidelines
 with st.form(key="monsoon_assistance_form", clear_on_submit=False):
     st.markdown("### 📋 Citizen Context Profiling")
     
@@ -117,7 +99,7 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
     submit_btn = st.form_submit_button(label="⚡ Generate Live Critical Action Plan")
 
 # -------------------------------------------------------------
-# 4. CRISIS PROCESSING RUNTIME ROUTINE (PROBLEM STATEMENT ALIGNMENT)
+# 4. CRISIS PROCESSING RUNTIME ROUTINE
 # -------------------------------------------------------------
 if submit_btn and family_context and location:
     
@@ -149,38 +131,28 @@ if submit_btn and family_context and location:
 
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
-            # Direct generation processing via standard workhorse inference engine
-            # response = client.models.generate_content(
-            #     model='gemini-2.5-flash',
-            #     contents=prompt,
-            #     config=types.GenerateContentConfig(
-            #         response_mime_type="application/json",
-            #         temperature=0.1
-            #     ),
-            # )
-            # Using the enterprise resource path matching the vertexai=True gateway routing
+            # Generate structured response payload using the fast production-standard engine
             response = client.models.generate_content(
-                model='publishers/google/models/gemini-2.5-flash',
+                model='gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0.1
                 ),
             )
-            # Defensive integrity evaluation
+            
             if not response.text:
                 raise ValueError("Null output payload returned from server gateway.")
                 
             data = json.loads(response.text)
             
             # -------------------------------------------------------------
-            # 5. DYNAMIC COMPONENT RENDERING & UX DESIGN (ACCESSIBILITY)
+            # 5. DYNAMIC COMPONENT RENDERING & UX DESIGN
             # -------------------------------------------------------------
             st.markdown("### ⚠️ Active Status Notification")
             st.error(f"🚨 **{data['alert_banner'].get('headline', 'CRITICAL NOTICE')}**\n\n**Immediate Priority Action:** {data['alert_banner'].get('action_required', 'N/A')}")
             st.markdown("---")
             
-            # Interactive Multi-Pane Tabs for Scannability
             st.markdown("### 🗺️ Crisis Resilience Dashboard")
             tab1, tab2, tab3 = st.tabs(["🛡️ Preparedness & Guidance", "📋 Emergency Checklist", "🚗 Travel & Safety Controls"])
             
@@ -211,4 +183,4 @@ if submit_btn and family_context and location:
             st.error("⚠️ Data interpretation anomaly: The response payload dropped broken segments. Please regenerate.")
         except Exception as runtime_error:
             st.error(f"❌ Operational lifecycle breakdown encountered: {runtime_error}")
-            st.info("💡 *Developer Note:* If you see a 401/Blocked error here, ensure the 'Generative Language API' is enabled in your Google Cloud Project console.")
+            st.info("💡 *Developer Note:* If you see a 401/Blocked error, ensure the **Generative Language API** is enabled in your Google Cloud Project console.")
