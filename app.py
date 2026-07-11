@@ -15,36 +15,35 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. CACHED INFRASTRUCTURE INITIALIZATION LAYER (SECURITY & EFFICIENCY)
+# 2. CACHED INITIALIZATION LAYER (EFFICIENCY & SECURITY)
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def initialize_production_client() -> genai.Client:
+def initialize_production_client():
     """
-    Initializes the GenAI client using a structural header wrapper.
-    Satisfies SDK key validation checks while providing proper gateway credentials.
+    Initializes the GenAI Client using standard secrets parameters.
+    Bypasses custom header manipulation to ensure complete SDK compliance.
     """
-    # Fetch from Streamlit secrets vault environment configuration cascade
-    token_str = os.environ.get("GEMINI_API_KEY", "").strip()
-    
-    # If not set in the cloud vault secrets yet, use the verified project string
-    if not token_str:
-        token_str = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
-        
-    # We pass a structural placeholder string to satisfy the local 'api_key' parameter check,
-    # but append an explicit Authorization Bearer token header to ensure the Google 
-    # API gateway receives the correct OAuth2 context requested by the 401 message.
-    return genai.Client(
-        api_key="BypassLocalParameterCheckString",
-        vertexai=False,
-        http_options=types.HttpOptions(
-            headers={"Authorization": f"Bearer {token_str}"}
-        )
-    )
+    # Cascade lookup order: Streamlit Cloud Secrets -> Local OS Environment -> Fallback String
+    if "GEMINI_API_KEY" in st.secrets:
+        api_key_string = st.secrets["GEMINI_API_KEY"].strip()
+    elif os.environ.get("GEMINI_API_KEY"):
+        api_key_string = os.environ.get("GEMINI_API_KEY", "").strip()
+    else:
+        # Fallback project credential configuration variable
+        api_key_string = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+
+    if not api_key_string:
+        st.error("❌ Critical Infrastructure Failure: GEMINI_API_KEY is not configured.")
+        st.info("💡 **Fix:** Add GEMINI_API_KEY inside the Streamlit Cloud Settings → Secrets tab.")
+        st.stop()
+
+    # Correct native instantiation using the simple string variable directly
+    return genai.Client(api_key=api_key_string)
 
 try:
     client = initialize_production_client()
 except Exception as init_err:
-    st.error(f"System Infrastructure failure: {init_err}")
+    st.error(f"System Infrastructure initialization failure: {init_err}")
     st.stop()
 
 # -------------------------------------------------------------
@@ -67,7 +66,7 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
         )
         family_context = st.text_area(
             label="Family Composition Details (Include elderly, children, pets, or medical requirements):",
-            placeholder="e.g., 4 family members including an elderly grandparent with limited mobility and a 2-year-old infant.",
+            placeholder="e.g., 4 family members including an elderly grandparent who uses a wheelchair and a 14-month-old infant.",
             help="Tailors food, medical supplies, and immediate structural evacuation priorities."
         )
     
@@ -124,7 +123,7 @@ if submit_btn and family_context and location:
 
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
-            # Generate structured response payload using the production-standard model configuration
+            # Direct generation processing via standard workhorse inference engine
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
@@ -175,6 +174,7 @@ if submit_btn and family_context and location:
                 st.success(f"🧼 **Health, Hygiene & Sanitation Controls**\n\n{data.get('safety_recommendations', 'N/A')}")
                 
         except json.JSONDecodeError:
-            st.error("Data interpretation anomaly: The response payload dropped broken segments. Please regenerate.")
+            st.error("⚠️ Data interpretation anomaly: The response payload dropped broken segments. Please regenerate.")
         except Exception as runtime_error:
-            st.error(f"Operational lifecycle breakdown encountered: {runtime_error}")
+            st.error(f"❌ Operational lifecycle breakdown encountered: {runtime_error}")
+            st.info("💡 *Developer Note:* If you see a 401/Blocked error here, ensure the 'Generative Language API' is enabled in your Google Cloud Project console.")
