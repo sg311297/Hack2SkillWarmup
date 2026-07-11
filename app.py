@@ -15,24 +15,28 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. CACHED & VERIFIED INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# 2. VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def initialize_production_client() -> genai.Client:
+def initialize_vertex_client() -> genai.Client:
     """
-    Initializes and caches the GenAI client.
-    Safely utilizes the environment configuration fallback cascade.
+    Initializes the GenAI client via the Vertex AI corporate gateway.
+    Natively accepts project tokens starting with 'AQ.' without authentication errors.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    
-    # If not set in the cloud vault secrets, fall back to the project token
     if not api_key:
         api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
         
-    return genai.Client(api_key=api_key, vertexai=False)
+    # Configured explicitly using your harvested Project ID for enterprise routing
+    return genai.Client(
+        api_key=api_key,
+        vertexai=True,
+        project="495052757861",
+        location="us-central1"
+    )
 
 try:
-    client = initialize_production_client()
+    client = initialize_vertex_client()
 except Exception as init_err:
     st.error(f"System Infrastructure failure: {init_err}")
     st.stop()
@@ -114,9 +118,9 @@ if submit_btn and family_context and location:
 
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
-            # Generate structured response payload using the fast production-standard engine
+            # Using the absolute fully qualified enterprise model string for stable execution
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='publishers/google/models/gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
