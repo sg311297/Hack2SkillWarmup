@@ -48,6 +48,8 @@ def clean_model_field(raw: Optional[str]) -> str:
     text = re.sub(r"^```[a-zA-Z0-9\-]*\n|\n```$", "", text)
     # Unescape HTML entities
     text = html_lib.unescape(text)
+    # Remove any remaining HTML tags to avoid rendering model-supplied markup
+    text = re.sub(r"<[^>]+>", "", text)
     return text
 
 
@@ -211,10 +213,11 @@ def render_checklist(items: list[str]) -> None:
     
     checked_count = 0
     for idx, item in enumerate(items):
+        label = clean_model_field(item)
         checked = st.checkbox(
-            label=item,
+            label=label,
             key=f"monsoon_item_{idx}",
-            help=f"Mark '{item}' as completed in your emergency checklist.",
+            help=f"Mark '{label}' as completed in your emergency checklist.",
         )
         if checked:
             checked_count += 1

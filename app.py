@@ -30,6 +30,7 @@ from utils import (
     initialize_genai_client,
     generate_crisis_plan,
     parse_crisis_plan_response,
+    clean_model_field,
 )
 
 # ========================================================================
@@ -245,7 +246,7 @@ if submit_btn and family_context and location:
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         st.markdown("<div id='travel'></div>", unsafe_allow_html=True)
         
-        travel_advisory = data.get(config.RESPONSE_KEYS["travel_advisory"], "N/A")
+        travel_advisory = clean_model_field(data.get(config.RESPONSE_KEYS["travel_advisory"], "N/A"))
         st.markdown(
             f"""
             <div class='report-card'>
@@ -264,7 +265,7 @@ if submit_btn and family_context and location:
         # ====== AI GUIDANCE SECTION ======
         st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
         
-        weather_guidance = data.get(config.RESPONSE_KEYS["weather_guidance"], "N/A")
+        weather_guidance = clean_model_field(data.get(config.RESPONSE_KEYS["weather_guidance"], "N/A"))
         st.markdown(
             f"""
             <div class='report-card'>
