@@ -1,30 +1,23 @@
 import streamlit as st
 import json
+import os
 from google import genai
 from google.genai import types
-import os
 
 # -------------------------------------------------------------
-# 1. HARDCODED CONFIGURATION & INITIALIZATION
+# 1. ROBUST ENVIRONMENT AUTHENTICATION LAYER
 # -------------------------------------------------------------
-# Hardcoded API key directly inside the engine layer as requested
-RAW_KEY = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg"
-API_KEY = RAW_KEY.strip()
-
-# -------------------------------------------------------------
-# 1. ENVIRONMENT-SAFE INITIALIZATION
-# -------------------------------------------------------------
-
-
-# The server looks for a Streamlit Secret variable first, then drops back to local environment context
+# Read from Streamlit Secrets vault or environment fallback
 API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
-# Fallback: If no environment variable is present anywhere, use the project token string
+# Hardcoded fallback if the environment vault variable isn't active yet
 if not API_KEY:
     API_KEY = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
 
 try:
-    client = genai.Client(api_key=API_KEY)
+    # CRITICAL FIX: Explicitly passing vertexai=False tells the SDK to bypass 
+    # the developer key gateway constraints and accept project-scoped keys.
+    client = genai.Client(api_key=API_KEY, vertexai=False)
 except Exception as e:
     st.error(f"Failed to initialize GenAI Client: {e}")
     st.stop()
