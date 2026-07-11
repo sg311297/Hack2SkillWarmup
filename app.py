@@ -3,6 +3,7 @@ import json
 import os
 from google import genai
 from google.genai import types
+from google.oauth2.credentials import Credentials
 
 # -------------------------------------------------------------
 # 1. ACCESSIBILITY & PRODUCTION THEME SETUP
@@ -15,37 +16,34 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. ISOLATED USER-DRIVEN INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# 2. RESOLUTION: OAUTH2 SCOPED INITIALIZATION LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
-st.sidebar.markdown("### 🔑 Authentication Gatekeeper")
-
-# Direct user interface password input to guarantee clear evaluation pathways
-user_api_key = st.sidebar.text_input(
-    label="Enter Gemini API Key (Must start with AIzaSy...):",
-    type="password",
-    help="Provide a standard developer key from Google AI Studio to unlock background services."
-)
-
-# STRICT BARRIER: Halt execution completely before initialization happens
-if not user_api_key:
-    st.sidebar.warning("⚠️ Waiting for a valid Gemini API Key...")
-    st.info("💡 **Initialization Required:** To execute the Monsoon Preparedness model pipeline, please paste your functional Gemini API key (starting with `AIzaSy`) into the left sidebar field.")
-    st.stop()
-
-# Cached setup utilizing strictly verified user input strings to boost Efficiency
 @st.cache_resource(show_spinner=False)
-def get_verified_client(clean_key: str) -> genai.Client:
+def initialize_oauth_client() -> genai.Client:
     """
-    Instantiates an isolated client instance completely detached from 
-    legacy cloud environment variable variables.
+    Wraps the project token inside an explicit OAuth2 credential object.
+    Satisfies the gateway's requirement for active authentication tokens.
     """
-    return genai.Client(api_key=clean_key.strip(), vertexai=False)
+    # Fetch token from environment or fallback target string
+    token_str = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not token_str:
+        token_str = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+        
+    try:
+        # RESOLUTION: Build an explicit OAuth2 credential container using the token string
+        # This supplies the 'OAuth 2 access token' requested by the Google DevConsole gateway error.
+        credentials = Credentials(token=token_str)
+        
+        # Instantiate the client by passing credentials instead of an api_key string
+        return genai.Client(credentials=credentials, vertexai=False)
+    except Exception as oauth_err:
+        st.error(f"OAuth2 container construction failed: {oauth_err}")
+        st.stop()
 
 try:
-    # Pass the user input explicitly, bypassing all background environment lookups
-    client = get_verified_client(user_api_key)
+    client = initialize_oauth_client()
 except Exception as init_err:
-    st.error(f"Failed to instantiate runtime engine: {init_err}")
+    st.error(f"System Infrastructure failure: {init_err}")
     st.stop()
 
 # -------------------------------------------------------------
