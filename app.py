@@ -3,7 +3,6 @@ import json
 import os
 from google import genai
 from google.genai import types
-from google.oauth2.credentials import Credentials
 
 # -------------------------------------------------------------
 # 1. ACCESSIBILITY & PRODUCTION THEME SETUP
@@ -16,32 +15,24 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. RESOLUTION: OAUTH2 SCOPED INITIALIZATION LAYER (SECURITY & EFFICIENCY)
+# 2. CACHED & VERIFIED INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def initialize_oauth_client() -> genai.Client:
+def initialize_production_client() -> genai.Client:
     """
-    Wraps the project token inside an explicit OAuth2 credential object.
-    Satisfies the gateway's requirement for active authentication tokens.
+    Initializes and caches the GenAI client.
+    Safely utilizes the environment configuration fallback cascade.
     """
-    # Fetch token from environment or fallback target string
-    token_str = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not token_str:
-        token_str = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    
+    # If not set in the cloud vault secrets, fall back to the project token
+    if not api_key:
+        api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
         
-    try:
-        # RESOLUTION: Build an explicit OAuth2 credential container using the token string
-        # This supplies the 'OAuth 2 access token' requested by the Google DevConsole gateway error.
-        credentials = Credentials(token=token_str)
-        
-        # Instantiate the client by passing credentials instead of an api_key string
-        return genai.Client(credentials=credentials, vertexai=False)
-    except Exception as oauth_err:
-        st.error(f"OAuth2 container construction failed: {oauth_err}")
-        st.stop()
+    return genai.Client(api_key=api_key, vertexai=False)
 
 try:
-    client = initialize_oauth_client()
+    client = initialize_production_client()
 except Exception as init_err:
     st.error(f"System Infrastructure failure: {init_err}")
     st.stop()
@@ -73,7 +64,12 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
     with col_b:
         weather_severity = st.selectbox(
             label="Current Regional Weather Severity Status:",
-            options=["Normal / Pre-Monsoon Preparation", "Yellow Alert (Heavy Rain Expected)", "Orange Alert (Very Heavy Rain / Disruptions)", "Red Alert (Extremely Severe / Flood Warning)"],
+            options=[
+                "Normal / Pre-Monsoon Preparation", 
+                "Yellow Alert (Heavy Rain Expected)", 
+                "Orange Alert (Very Heavy Rain / Disruptions)", 
+                "Red Alert (Extremely Severe / Flood Warning)"
+            ],
             help="Sets the operational urgency context for before, during, or after severe weather events."
         )
         language_choice = st.radio(
