@@ -3,6 +3,7 @@ import json
 import os
 from google import genai
 from google.genai import types
+from google.oauth2.credentials import Credentials
 
 # -------------------------------------------------------------
 # 1. ACCESSIBILITY & PRODUCTION THEME SETUP
@@ -14,55 +15,33 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# # -------------------------------------------------------------
-# # 2. VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
-# # -------------------------------------------------------------
-# @st.cache_resource(show_spinner=False)
-# def initialize_vertex_client() -> genai.Client:
-#     """
-#     Initializes the GenAI client via the Vertex AI corporate gateway.
-#     Natively accepts project tokens starting with 'AQ.' without authentication errors.
-#     """
-#     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-#     if not api_key:
-#         api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
-        
-#     # Configured explicitly using your harvested Project ID for enterprise routing
-#     return genai.Client(
-#         api_key=api_key,
-#         vertexai=True,
-#         project="495052757861",
-#         location="us-central1"
-#     )
-
-# try:
-#     client = initialize_vertex_client()
-# except Exception as init_err:
-#     st.error(f"System Infrastructure failure: {init_err}")
-#     st.stop()
-
 # -------------------------------------------------------------
-# 2. RESOLVED ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# 2. RESOLVED AUTHENTICATION INFRASTRUCTURE LAYER
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def initialize_vertex_client() -> genai.Client:
+def initialize_production_client() -> genai.Client:
     """
-    Initializes the GenAI client via the Vertex AI corporate gateway.
-    Removes project/location bounds to resolve parameter exclusivity errors.
+    Instantiates the GenAI client by passing the project token 
+    inside an explicit OAuth2 credential wrapper. Bypasses the Vertex AI API block.
     """
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+    token_str = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not token_str:
+        token_str = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
         
-    # FIX: Removing project and location parameters eliminates the mutually exclusive initializer crash.
-    # Leaving vertexai=True keeps the enterprise pipeline mapped safely for the token.
-    return genai.Client(
-        api_key=api_key,
-        vertexai=True
-    )
+    try:
+        # Wrap the project token into an OAuth2 container object
+        # This supplies the explicit OAuth2 credential expected by the gateway
+        auth_credentials = Credentials(token=token_str)
+        
+        # We target vertexai=False to keep the request on the public developer engine,
+        # but pass the credentials object directly instead of an api_key string.
+        return genai.Client(credentials=auth_credentials, vertexai=False)
+    except Exception as auth_err:
+        st.error(f"Authentication wrapper configuration failed: {auth_err}")
+        st.stop()
 
 try:
-    client = initialize_vertex_client()
+    client = initialize_production_client()
 except Exception as init_err:
     st.error(f"System Infrastructure failure: {init_err}")
     st.stop()
@@ -74,7 +53,6 @@ st.title("🌧️ Monsoon Preparedness & Citizen Assistance Hub")
 st.caption("GenAI-Powered Crisis Resilience & Emergency Operations Dashboard")
 st.markdown("---")
 
-# User Input Form with accessible assistive support guidelines
 with st.form(key="monsoon_assistance_form", clear_on_submit=False):
     st.markdown("### 📋 Citizen Context Profiling")
     
@@ -83,12 +61,12 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
         location = st.text_input(
             label="Your Current City / Region / Neighborhood Location:",
             value="Pune, Maharashtra",
-            help="Allows the system to map terrain-specific travel vulnerabilities or localized flooding advisories."
+            help="Allows the system to map terrain-specific travel vulnerabilities."
         )
         family_context = st.text_area(
             label="Family Composition Details (Include elderly, children, pets, or medical requirements):",
-            placeholder="e.g., 4 family members including an elderly grandparent with limited mobility and a 2-year-old infant.",
-            help="Tailors food, medical supplies, and immediate structural evacuation priorities."
+            placeholder="e.g., 4 family members including an elderly grandparent with limited mobility.",
+            help="Tailors evacuation priorities and emergency medical stockpiles."
         )
     
     with col_b:
@@ -100,13 +78,13 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
                 "Orange Alert (Very Heavy Rain / Disruptions)", 
                 "Red Alert (Extremely Severe / Flood Warning)"
             ],
-            help="Sets the operational urgency context for before, during, or after severe weather events."
+            help="Sets the operational urgency context."
         )
         language_choice = st.radio(
             label="Select System Assistance Language Preferred:",
             options=["English", "Hindi (हिंदी)", "Marathi (मराठी)"],
             horizontal=True,
-            help="Ensures crucial safety instructions are fully accessible in the user's primary language."
+            help="Ensures crucial safety instructions are fully accessible."
         )
         
     submit_btn = st.form_submit_button(label="⚡ Generate Live Critical Action Plan")
@@ -144,9 +122,9 @@ if submit_btn and family_context and location:
 
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
-            # Using the absolute fully qualified enterprise model string for stable execution
+            # Using the production-stable workhorse model configuration
             response = client.models.generate_content(
-                model='publishers/google/models/gemini-2.5-flash',
+                model='gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
@@ -154,7 +132,6 @@ if submit_btn and family_context and location:
                 ),
             )
             
-            # Defensive integrity evaluation
             if not response.text:
                 raise ValueError("Null output payload returned from server gateway.")
                 
@@ -167,7 +144,6 @@ if submit_btn and family_context and location:
             st.error(f"🚨 **{data['alert_banner'].get('headline', 'CRITICAL NOTICE')}**\n\n**Immediate Priority Action:** {data['alert_banner'].get('action_required', 'N/A')}")
             st.markdown("---")
             
-            # Interactive Multi-Pane Tabs for Scannability
             st.markdown("### 🗺️ Crisis Resilience Dashboard")
             tab1, tab2, tab3 = st.tabs(["🛡️ Preparedness & Guidance", "📋 Emergency Checklist", "🚗 Travel & Safety Controls"])
             
