@@ -17,33 +17,59 @@ st.set_page_config(
 # -------------------------------------------------------------
 # 2. CACHED INITIALIZATION LAYER (EFFICIENCY & SECURITY)
 # -------------------------------------------------------------
+# @st.cache_resource(show_spinner=False)
+# def initialize_production_client():
+#     """
+#     Initializes the GenAI Client using standard secrets parameters.
+#     Bypasses custom header manipulation to ensure complete SDK compliance.
+#     """
+#     # Cascade lookup order: Streamlit Cloud Secrets -> Local OS Environment -> Fallback String
+#     if "GEMINI_API_KEY" in st.secrets:
+#         api_key_string = st.secrets["GEMINI_API_KEY"].strip()
+#     elif os.environ.get("GEMINI_API_KEY"):
+#         api_key_string = os.environ.get("GEMINI_API_KEY", "").strip()
+#     else:
+#         # Fallback project credential configuration variable
+#         api_key_string = "AQ.Ab8RN6KWInKaRgS0RdRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
+
+#     if not api_key_string:
+#         st.error("❌ Critical Infrastructure Failure: GEMINI_API_KEY is not configured.")
+#         st.info("💡 **Fix:** Add GEMINI_API_KEY inside the Streamlit Cloud Settings → Secrets tab.")
+#         st.stop()
+
+#     # Correct native instantiation using the simple string variable directly
+#     return genai.Client(api_key=api_key_string)
+
+# try:
+#     client = initialize_production_client()
+# except Exception as init_err:
+#     st.error(f"System Infrastructure initialization failure: {init_err}")
+#     st.stop()
+
+# -------------------------------------------------------------
+# 2. CACHED VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER
+# -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
-def initialize_production_client():
+def initialize_vertex_client() -> genai.Client:
     """
-    Initializes the GenAI Client using standard secrets parameters.
-    Bypasses custom header manipulation to ensure complete SDK compliance.
+    Initializes the GenAI client via Vertex AI. 
+    Routes the GCP service-account-bound key through the enterprise gateway.
     """
-    # Cascade lookup order: Streamlit Cloud Secrets -> Local OS Environment -> Fallback String
-    if "GEMINI_API_KEY" in st.secrets:
-        api_key_string = st.secrets["GEMINI_API_KEY"].strip()
-    elif os.environ.get("GEMINI_API_KEY"):
-        api_key_string = os.environ.get("GEMINI_API_KEY", "").strip()
-    else:
-        # Fallback project credential configuration variable
-        api_key_string = "AQ.Ab8RN6KWInKaRgS0RdRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
-
-    if not api_key_string:
-        st.error("❌ Critical Infrastructure Failure: GEMINI_API_KEY is not configured.")
-        st.info("💡 **Fix:** Add GEMINI_API_KEY inside the Streamlit Cloud Settings → Secrets tab.")
-        st.stop()
-
-    # Correct native instantiation using the simple string variable directly
-    return genai.Client(api_key=api_key_string)
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        # Paste your newly generated bound key string here securely
+        api_key = "AQ.Ab8RN6KWInKaRgS0RDRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
+        
+    # Crucial: Setting vertexai=True maps the AQ key format onto its native Google Cloud API layer
+    return genai.Client(
+        api_key=api_key,
+        vertexai=True
+    )
 
 try:
-    client = initialize_production_client()
+    client = initialize_vertex_client()
 except Exception as init_err:
-    st.error(f"System Infrastructure initialization failure: {init_err}")
+    st.error(f"System Infrastructure failure: {init_err}")
     st.stop()
 
 # -------------------------------------------------------------
@@ -124,15 +150,23 @@ if submit_btn and family_context and location:
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
             # Direct generation processing via standard workhorse inference engine
+            # response = client.models.generate_content(
+            #     model='gemini-2.5-flash',
+            #     contents=prompt,
+            #     config=types.GenerateContentConfig(
+            #         response_mime_type="application/json",
+            #         temperature=0.1
+            #     ),
+            # )
+            # Using the enterprise resource path matching the vertexai=True gateway routing
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='publishers/google/models/gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0.1
                 ),
             )
-            
             # Defensive integrity evaluation
             if not response.text:
                 raise ValueError("Null output payload returned from server gateway.")
