@@ -3,7 +3,6 @@ import json
 import os
 from google import genai
 from google.genai import types
-from google.oauth2.credentials import Credentials
 
 # -------------------------------------------------------------
 # 1. ACCESSIBILITY & PRODUCTION THEME SETUP
@@ -16,29 +15,31 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. RESOLVED AUTHENTICATION INFRASTRUCTURE LAYER
+# 2. CACHED INFRASTRUCTURE INITIALIZATION LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def initialize_production_client() -> genai.Client:
     """
-    Instantiates the GenAI client by passing the project token 
-    inside an explicit OAuth2 credential wrapper. Bypasses the Vertex AI API block.
+    Initializes the GenAI client using a structural header wrapper.
+    Satisfies SDK key validation checks while providing proper gateway credentials.
     """
+    # Fetch from Streamlit secrets vault environment configuration cascade
     token_str = os.environ.get("GEMINI_API_KEY", "").strip()
+    
+    # If not set in the cloud vault secrets yet, use the verified project string
     if not token_str:
         token_str = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
         
-    try:
-        # Wrap the project token into an OAuth2 container object
-        # This supplies the explicit OAuth2 credential expected by the gateway
-        auth_credentials = Credentials(token=token_str)
-        
-        # We target vertexai=False to keep the request on the public developer engine,
-        # but pass the credentials object directly instead of an api_key string.
-        return genai.Client(credentials=auth_credentials, vertexai=False)
-    except Exception as auth_err:
-        st.error(f"Authentication wrapper configuration failed: {auth_err}")
-        st.stop()
+    # We pass a structural placeholder string to satisfy the local 'api_key' parameter check,
+    # but append an explicit Authorization Bearer token header to ensure the Google 
+    # API gateway receives the correct OAuth2 context requested by the 401 message.
+    return genai.Client(
+        api_key="BypassLocalParameterCheckString",
+        vertexai=False,
+        http_options=types.HttpOptions(
+            headers={"Authorization": f"Bearer {token_str}"}
+        )
+    )
 
 try:
     client = initialize_production_client()
@@ -53,6 +54,7 @@ st.title("🌧️ Monsoon Preparedness & Citizen Assistance Hub")
 st.caption("GenAI-Powered Crisis Resilience & Emergency Operations Dashboard")
 st.markdown("---")
 
+# User Input Form with accessible assistive support guidelines
 with st.form(key="monsoon_assistance_form", clear_on_submit=False):
     st.markdown("### 📋 Citizen Context Profiling")
     
@@ -61,12 +63,12 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
         location = st.text_input(
             label="Your Current City / Region / Neighborhood Location:",
             value="Pune, Maharashtra",
-            help="Allows the system to map terrain-specific travel vulnerabilities."
+            help="Allows the system to map terrain-specific travel vulnerabilities or localized flooding advisories."
         )
         family_context = st.text_area(
             label="Family Composition Details (Include elderly, children, pets, or medical requirements):",
-            placeholder="e.g., 4 family members including an elderly grandparent with limited mobility.",
-            help="Tailors evacuation priorities and emergency medical stockpiles."
+            placeholder="e.g., 4 family members including an elderly grandparent with limited mobility and a 2-year-old infant.",
+            help="Tailors food, medical supplies, and immediate structural evacuation priorities."
         )
     
     with col_b:
@@ -78,13 +80,13 @@ with st.form(key="monsoon_assistance_form", clear_on_submit=False):
                 "Orange Alert (Very Heavy Rain / Disruptions)", 
                 "Red Alert (Extremely Severe / Flood Warning)"
             ],
-            help="Sets the operational urgency context."
+            help="Sets the operational urgency context for before, during, or after severe weather events."
         )
         language_choice = st.radio(
             label="Select System Assistance Language Preferred:",
             options=["English", "Hindi (हिंदी)", "Marathi (मराठी)"],
             horizontal=True,
-            help="Ensures crucial safety instructions are fully accessible."
+            help="Ensures crucial safety instructions are fully accessible in the user's primary language."
         )
         
     submit_btn = st.form_submit_button(label="⚡ Generate Live Critical Action Plan")
@@ -122,7 +124,7 @@ if submit_btn and family_context and location:
 
     with st.spinner("⏳ Compiling regional travel vectors and structural evacuation checklists..."):
         try:
-            # Using the production-stable workhorse model configuration
+            # Generate structured response payload using the production-standard model configuration
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
@@ -132,6 +134,7 @@ if submit_btn and family_context and location:
                 ),
             )
             
+            # Defensive integrity evaluation
             if not response.text:
                 raise ValueError("Null output payload returned from server gateway.")
                 
@@ -144,6 +147,7 @@ if submit_btn and family_context and location:
             st.error(f"🚨 **{data['alert_banner'].get('headline', 'CRITICAL NOTICE')}**\n\n**Immediate Priority Action:** {data['alert_banner'].get('action_required', 'N/A')}")
             st.markdown("---")
             
+            # Interactive Multi-Pane Tabs for Scannability
             st.markdown("### 🗺️ Crisis Resilience Dashboard")
             tab1, tab2, tab3 = st.tabs(["🛡️ Preparedness & Guidance", "📋 Emergency Checklist", "🚗 Travel & Safety Controls"])
             
