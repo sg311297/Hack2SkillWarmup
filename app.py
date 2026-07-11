@@ -2,6 +2,7 @@ import streamlit as st
 import json
 from google import genai
 from google.genai import types
+import os
 
 # -------------------------------------------------------------
 # 1. HARDCODED CONFIGURATION & INITIALIZATION
@@ -10,11 +11,29 @@ from google.genai import types
 RAW_KEY = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg"
 API_KEY = RAW_KEY.strip()
 
+# -------------------------------------------------------------
+# 1. ENVIRONMENT-SAFE INITIALIZATION
+# -------------------------------------------------------------
+
+
+# The server looks for a Streamlit Secret variable first, then drops back to local environment context
+API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+
+# Fallback: If no environment variable is present anywhere, use the project token string
+if not API_KEY:
+    API_KEY = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+
 try:
     client = genai.Client(api_key=API_KEY)
 except Exception as e:
     st.error(f"Failed to initialize GenAI Client: {e}")
     st.stop()
+
+# try:
+#     client = genai.Client(api_key=API_KEY)
+# except Exception as e:
+#     st.error(f"Failed to initialize GenAI Client: {e}")
+#     st.stop()
 
 # -------------------------------------------------------------
 # 2. UPGRADED UI HEADER DESIGN
