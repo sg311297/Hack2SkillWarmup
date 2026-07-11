@@ -45,7 +45,7 @@ st.markdown(
         box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
         border: 1px solid rgba(255,255,255,0.72);
         backdrop-filter: blur(18px);
-        padding: 28px;
+        padding: 10px;
     }
     .hero-panel {
         position: relative;
