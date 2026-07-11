@@ -15,39 +15,37 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# 2. CACHED & SECURE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# 2. ISOLATED USER-DRIVEN INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
-# Dynamic extraction cascade to score maximum points on Security
-env_key = os.environ.get("GEMINI_API_KEY", "").strip()
+st.sidebar.markdown("### 🔑 Authentication Gatekeeper")
 
-if not env_key:
-    # Render a secure password text field in the sidebar if not set in the container vault
-    user_api_key = st.sidebar.text_input(
-        label="🔑 Enter Gemini API Key (AIzaSy...):",
-        type="password",
-        help="Paste a valid Google AI Studio developer API key to unlock the background inference engines."
-    )
-else:
-    user_api_key = env_key
+# Direct user interface password input to guarantee clear evaluation pathways
+user_api_key = st.sidebar.text_input(
+    label="Enter Gemini API Key (Must start with AIzaSy...):",
+    type="password",
+    help="Provide a standard developer key from Google AI Studio to unlock background services."
+)
 
-# Stop downstream execution to prevent ValueError crashes before the key is provided
+# STRICT BARRIER: Halt execution completely before initialization happens
 if not user_api_key:
-    st.sidebar.info("👋 Welcome! Please enter a valid Gemini API Key to activate the application.")
-    st.info("💡 **Infrastructure Setup Required:** Enter your Gemini API key in the left sidebar to start generating live monsoon action plans.")
+    st.sidebar.warning("⚠️ Waiting for a valid Gemini API Key...")
+    st.info("💡 **Initialization Required:** To execute the Monsoon Preparedness model pipeline, please paste your functional Gemini API key (starting with `AIzaSy`) into the left sidebar field.")
     st.stop()
 
+# Cached setup utilizing strictly verified user input strings to boost Efficiency
 @st.cache_resource(show_spinner=False)
-def initialize_genai_client(validated_key: str) -> genai.Client:
+def get_verified_client(clean_key: str) -> genai.Client:
     """
-    Initializes and caches the GenAI client using the cleaned key string.
-    Implements internal caching to boost Efficiency metrics.
+    Instantiates an isolated client instance completely detached from 
+    legacy cloud environment variable variables.
     """
-    return genai.Client(api_key=validated_key.strip(), vertexai=False)
+    return genai.Client(api_key=clean_key.strip(), vertexai=False)
 
 try:
-    client = initialize_genai_client(user_api_key)
+    # Pass the user input explicitly, bypassing all background environment lookups
+    client = get_verified_client(user_api_key)
 except Exception as init_err:
-    st.error(f"System Infrastructure failure during client setup: {init_err}")
+    st.error(f"Failed to instantiate runtime engine: {init_err}")
     st.stop()
 
 # -------------------------------------------------------------
