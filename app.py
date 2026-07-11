@@ -14,25 +14,51 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# # -------------------------------------------------------------
+# # 2. VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# # -------------------------------------------------------------
+# @st.cache_resource(show_spinner=False)
+# def initialize_vertex_client() -> genai.Client:
+#     """
+#     Initializes the GenAI client via the Vertex AI corporate gateway.
+#     Natively accepts project tokens starting with 'AQ.' without authentication errors.
+#     """
+#     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+#     if not api_key:
+#         api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+        
+#     # Configured explicitly using your harvested Project ID for enterprise routing
+#     return genai.Client(
+#         api_key=api_key,
+#         vertexai=True,
+#         project="495052757861",
+#         location="us-central1"
+#     )
+
+# try:
+#     client = initialize_vertex_client()
+# except Exception as init_err:
+#     st.error(f"System Infrastructure failure: {init_err}")
+#     st.stop()
+
 # -------------------------------------------------------------
-# 2. VERTEX AI ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
+# 2. RESOLVED ENTERPRISE INFRASTRUCTURE LAYER (SECURITY & EFFICIENCY)
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def initialize_vertex_client() -> genai.Client:
     """
     Initializes the GenAI client via the Vertex AI corporate gateway.
-    Natively accepts project tokens starting with 'AQ.' without authentication errors.
+    Removes project/location bounds to resolve parameter exclusivity errors.
     """
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         api_key = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
         
-    # Configured explicitly using your harvested Project ID for enterprise routing
+    # FIX: Removing project and location parameters eliminates the mutually exclusive initializer crash.
+    # Leaving vertexai=True keeps the enterprise pipeline mapped safely for the token.
     return genai.Client(
         api_key=api_key,
-        vertexai=True,
-        project="495052757861",
-        location="us-central1"
+        vertexai=True
     )
 
 try:
