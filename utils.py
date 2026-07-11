@@ -11,6 +11,8 @@ from datetime import datetime
 import streamlit as st
 from google import genai
 from google.genai import types
+import html as html_lib
+import re
 
 from config import (
     GEMINI_MODEL,
@@ -23,6 +25,30 @@ from config import (
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def clean_model_field(raw: Optional[str]) -> str:
+    """
+    Clean and normalize text returned by the model.
+
+    - Strips surrounding backticks or code fences
+    - Unescapes HTML entities (e.g. &lt;, &gt;)
+    - Trims whitespace
+
+    Returns a safe plain-text string suitable for insertion into HTML templates
+    that the app constructs (not for rendering untrusted HTML directly).
+    """
+    if not raw:
+        return ""
+    text = str(raw).strip()
+    # Remove common markdown/code fences/backticks
+    # Remove leading/trailing triple backticks or single backticks
+    text = re.sub(r"^`{1,3}|`{1,3}$", "", text).strip()
+    # If wrapped in fenced code blocks with language (```json ... ```)
+    text = re.sub(r"^```[a-zA-Z0-9\-]*\n|\n```$", "", text)
+    # Unescape HTML entities
+    text = html_lib.unescape(text)
+    return text
 
 
 def render_sidebar_panel(title: str, subtitle: str, icon: str, is_authenticated: bool) -> None:
@@ -157,11 +183,12 @@ def render_result_grid(data: dict[str, Any]) -> None:
     
     cards_html = ""
     for result in results:
+        content = clean_model_field(result.get("content", ""))
         cards_html += f"""
         <div class='result-card'>
             <div class='card-icon' style='background: {result["bg_color"]}; color:{result["icon_color"]};'>{result["icon"]}</div>
             <h3>{result["title"]}</h3>
-            <p style='color:#0f172a; line-height:1.7;'>{result["content"]}</p>
+            <p style='color:#0f172a; line-height:1.7;'>{content}</p>
         </div>
         """
     
@@ -310,6 +337,9 @@ def generate_crisis_plan(
         "safety_recommendations": "Disease prevention, sanitation, water safety protocols post-event"
     }}
     Return raw text only. Do not wrap output in markdown code blocks.
+
+    IMPORTANT: Return only a single valid JSON object. DO NOT include any HTML tags, markdown, or
+    code fences. All response fields must contain plain text only.
     """
     
     logger.info(f"Generating crisis plan for {location}")
