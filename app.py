@@ -133,7 +133,7 @@ if submit_btn and family_context and location:
         try:
             # Generate structured response payload using the fast production-standard engine
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
