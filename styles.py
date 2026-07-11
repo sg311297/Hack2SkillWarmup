@@ -17,6 +17,18 @@ GLOBAL_STYLES = """
         background: linear-gradient(180deg, #f8fafc 0%, #eef4fb 100%);
         color: #0f172a;
     }
+    /* Screen reader only utility */
+    .sr-only {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+    }
 """
 
 CARD_STYLES = """
@@ -87,6 +99,7 @@ HERO_STYLES = """
         font-weight: 600;
         font-size: 0.95rem;
     }
+    .hero-pill .pill-text { margin-left: 6px; }
     .hero-pill span {
         font-size: 1.35rem;
     }
@@ -165,6 +178,10 @@ SIDEBAR_STYLES = """
         border-color: rgba(37,99,235,0.18);
         background: rgba(37,99,235,0.06);
     }
+    .sidebar-link:focus {
+        outline: 3px solid rgba(37,99,235,0.14);
+        outline-offset: 2px;
+    }
     .sidebar-divider {
         height: 1px;
         background: rgba(15,23,42,0.08);
@@ -198,6 +215,11 @@ RESULT_STYLES = """
         border-radius: 14px;
         margin-bottom: 14px;
         font-size: 1.25rem;
+    }
+    /* Make result cards keyboard-focusable with clear outline */
+    .result-card:focus {
+        outline: 3px solid rgba(37,99,235,0.18);
+        outline-offset: 4px;
     }
 """
 
@@ -263,6 +285,9 @@ BUTTON_STYLES = """
     .primary-gradient-button > button:focus {
         outline: none;
         box-shadow: 0 0 0 4px rgba(37,99,235,0.18);
+    }
+    .primary-gradient-button > button:focus-visible {
+        outline: 3px solid rgba(37,99,235,0.22);
     }
 """
 

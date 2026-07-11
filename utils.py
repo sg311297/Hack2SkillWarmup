@@ -65,9 +65,9 @@ def render_sidebar_panel(title: str, subtitle: str, icon: str, is_authenticated:
     """
     brand_icon = "✅" if is_authenticated else icon
     nav_html = """
-    <div class='sidebar-panel'>
+    <nav class='sidebar-panel' role='navigation' aria-label='Main navigation'>
         <div class='sidebar-brand'>
-            <div class='brand-icon'>{}</div>
+            <div class='brand-icon' aria-hidden='true'>{}</div>
             <div>
                 <h2>{}</h2>
                 <div style='color:#64748b;font-size:0.92rem;margin-top:4px;'>{}</div>
@@ -79,7 +79,7 @@ def render_sidebar_panel(title: str, subtitle: str, icon: str, is_authenticated:
         <a class='sidebar-link' href='#checklist'>📋 Emergency Checklist</a>
         <a class='sidebar-link' href='#travel'>🚗 Travel Advisory</a>
         <a class='sidebar-link' href='#settings'>⚙️ Settings</a>
-    </div>
+    </nav>
     """.format(brand_icon, title, subtitle)
     st.sidebar.markdown(nav_html, unsafe_allow_html=True)
 
@@ -94,7 +94,7 @@ def render_hero_section(title: str, subtitle: str, pills: list[str]) -> None:
         pills: List of pill items to display
     """
     pills_html = "".join(
-        f"<div class='hero-pill'><span>{p.split(maxsplit=1)[0]}</span>{' '.join(p.split()[1:])}</div>"
+        f"<li role='listitem' class='hero-pill'><span aria-hidden='true'>{p.split(maxsplit=1)[0]}</span><span class='pill-text'>{' '.join(p.split()[1:])}</span></li>"
         for p in pills
     )
     hero_html = f"""
@@ -103,9 +103,9 @@ def render_hero_section(title: str, subtitle: str, pills: list[str]) -> None:
             <p style='margin:0;font-size:0.95rem;font-weight:600;opacity:0.92;'>Enterprise Monsoon Preparedness Console</p>
             <h1 class='hero-title'>{title}</h1>
             <p class='hero-subtitle'>{subtitle}</p>
-            <div class='hero-pill-grid'>
+            <ul class='hero-pill-grid' role='list' aria-label='Highlights'>
                 {pills_html}
-            </div>
+            </ul>
         </div>
     </div>
     """
@@ -186,10 +186,11 @@ def render_result_grid(data: dict[str, Any]) -> None:
     cards_html = ""
     for result in results:
         content = clean_model_field(result.get("content", ""))
+        heading_id = f"card_{result['title'].lower().replace(' ', '_')}"
         cards_html += f"""
-        <div class='result-card'>
-            <div class='card-icon' style='background: {result["bg_color"]}; color:{result["icon_color"]};'>{result["icon"]}</div>
-            <h3>{result["title"]}</h3>
+        <div class='result-card' role='region' aria-labelledby='{heading_id}' tabindex='0'>
+            <div class='card-icon' style='background: {result["bg_color"]}; color:{result["icon_color"]};' aria-hidden='true'>{result["icon"]}</div>
+            <h3 id='{heading_id}'>{result["title"]}</h3>
             <p style='color:#0f172a; line-height:1.7;'>{content}</p>
         </div>
         """
