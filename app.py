@@ -30,7 +30,7 @@ def initialize_production_client():
         api_key_string = os.environ.get("GEMINI_API_KEY", "").strip()
     else:
         # Fallback project credential configuration variable
-        api_key_string = "AQ.Ab8RN6KSWILOjITTtofgab_IX0lJfWv4uW0x2oZKaK2RGIrSGg".strip()
+        api_key_string = "AQ.Ab8RN6KWInKaRgS0RdRcAbbAJ5jgOSgNVibtbFk0rtXN_xoKzA".strip()
 
     if not api_key_string:
         st.error("❌ Critical Infrastructure Failure: GEMINI_API_KEY is not configured.")
